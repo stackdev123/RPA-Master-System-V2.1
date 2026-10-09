@@ -279,7 +279,7 @@ export const SalesOrderView: React.FC<SalesOrderViewProps> = ({
                         </span>
                         {so.customerAddress && (
                           <span className="text-[10px] text-slate-400 truncate max-w-xs block">
-                            📍 {so.customerAddress}
+                            {so.customerAddress}
                           </span>
                         )}
                       </td>

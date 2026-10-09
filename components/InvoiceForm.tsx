@@ -393,7 +393,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                         <div className="pt-2 border-t border-slate-200/70 space-y-1.5">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                                    📍 Alamat Tagihan <span className="text-slate-400 font-bold normal-case">(Bisa diedit)</span>
+                                    Alamat Tagihan <span className="text-slate-400 font-bold normal-case">(Bisa diedit)</span>
                                 </label>
                                 <div className="flex flex-wrap items-center gap-2">
                                     {masterCustomerAddress && masterCustomerAddress.trim() !== billingAddress.trim() && (
