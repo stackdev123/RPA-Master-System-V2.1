@@ -1,0 +1,6 @@
+{
+  "name": "RPA Master System 2.0",
+  "description": "An application to manage production, stock, and logistics for a chicken slaughterhouse. It handles production input, stock management, customer allocation, and delivery order generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

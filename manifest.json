@@ -1,0 +1,25 @@
+
+{
+  "name": "CV Dua Putra Jaya RPA",
+  "short_name": "DPJ-RPA",
+  "description": "Sistem Produksi dan Logistik Rumah Pemotongan Ayam CV Dua Putra Jaya",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#dc2626",
+  "icons": [
+    {
+      "src": "/logo trial2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "orientation": "portrait"
+}

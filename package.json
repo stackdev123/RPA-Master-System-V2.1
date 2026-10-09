@@ -1,0 +1,42 @@
+{
+  "name": "dpj-rpa-system",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "start": "tsx server.ts",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "@types/jszip": "^3.4.0",
+    "downloadjs": "^1.4.7",
+    "express": "^5.2.1",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^4.2.0",
+    "jszip": "^3.10.1",
+    "node-cron": "^4.2.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tsx": "^4.21.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@rollup/plugin-image": "^3.0.3",
+    "@types/downloadjs": "^1.4.6",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8"
+  }
+}
