@@ -378,7 +378,7 @@ const DeliveryOrderDetail: React.FC<DeliveryOrderDetailProps> = ({ order, master
                     <div className="flex flex-col md:flex-row md:justify-between md:items-center mt-2 md:mt-4 pt-6 print:hidden px-4 md:px-10 pb-10 border-t bg-white gap-4 rounded-b-3xl">
                         <div className="flex flex-wrap gap-3">
                             <button onClick={startReceiving} className="flex-1 md:flex-none bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest px-8 py-4 rounded-2xl hover:bg-emerald-600 transition-all shadow-lg active:scale-95">
-                                {order.status === 'pending' ? 'Input Terima Real' : 'Edit Penerimaan'}
+                                {order.status === 'pending' ? 'Penerimaan' : 'Edit Penerimaan'}
                             </button>
                             {onInputReturn && (
                                 <button
