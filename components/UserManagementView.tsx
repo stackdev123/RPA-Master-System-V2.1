@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../supabaseClient';
 import type { UserAccount, AppModuleId, AccessLevel, UserPermissions } from '../types';
-import { APP_MODULES, getDefaultPermissions, parseUserPermissions, checkIsSuperAdmin } from '../constants';
+import { APP_MODULES, getDefaultPermissions, parseUserPermissions, checkIsSuperAdmin, checkCanManageAccess } from '../constants';
 import { 
     PlusIcon, TrashIcon, EditIcon, XIcon, CheckCircleIcon, 
     EyeIcon, EyeOffIcon, ChevronDownIcon, KeyIcon, SearchIcon, ShieldCheckIcon 
@@ -154,7 +154,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUserName
     const [searchQuery, setSearchQuery] = useState('');
     const [formError, setFormError] = useState('');
 
-    const isSuperAdmin = checkIsSuperAdmin(currentUserName, userRole);
+    const canManageAccess = checkCanManageAccess(currentUserName, userRole);
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -169,10 +169,10 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUserName
     };
 
     useEffect(() => {
-        if (isSuperAdmin) {
+        if (canManageAccess) {
             fetchUsers();
         }
-    }, [isSuperAdmin]);
+    }, [canManageAccess]);
 
     const handleOpenCreateModal = () => {
         setEditingUser(null);
@@ -262,6 +262,11 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUserName
         e.preventDefault();
         setFormError('');
 
+        if (!canManageAccess) {
+            setFormError('Hanya akun superadmin2 yang berwenang untuk membuat atau mengubah akun.');
+            return;
+        }
+
         const cleanUsername = formUsername.trim();
         if (!cleanUsername) {
             setFormError('Username wajib diisi.');
@@ -311,6 +316,14 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUserName
 
     const handleDeleteUser = async (userItem: UserAccount) => {
         if (!userItem.id) return;
+        if (!canManageAccess) {
+            alert('Hanya akun superadmin2 yang berwenang untuk menghapus akun.');
+            return;
+        }
+        if (userItem.user.trim().toLowerCase() === 'superadmin2') {
+            alert('Akun superadmin2 adalah akun otorisasi utama dan tidak dapat dihapus.');
+            return;
+        }
         if (userItem.user === currentUserName) {
             alert('Anda tidak dapat menghapus akun yang sedang Anda gunakan saat ini.');
             return;
@@ -355,13 +368,13 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUserName
         }).filter(Boolean) as typeof APP_MODULES;
     }, [searchQuery]);
 
-    if (!isSuperAdmin) {
+    if (!canManageAccess) {
         return (
             <div className="p-8 bg-rose-50 border border-rose-200 rounded-3xl text-center space-y-2">
                 <span className="text-2xl">🔒</span>
                 <h3 className="text-base font-black text-rose-900 uppercase">Akses Dibatasi</h3>
                 <p className="text-xs text-rose-700 font-bold">
-                    Menu ini khusus untuk akun Superadmin. Hubungi Super Administrator untuk mengubah hak akses.
+                    Hanya akun superadmin2 yang memiliki izin untuk mengatur hak akses dan mengelola akun pengguna. Akun superadmin biasa tidak diizinkan mengatur hak akses.
                 </p>
             </div>
         );
@@ -375,7 +388,7 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUserName
                 <div className="relative z-10">
                     <div className="flex items-center gap-2">
                         <span className="px-3 py-1 bg-amber-400 text-slate-950 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm">
-                            Superadmin Master Control
+                            Superadmin 2 Master Control
                         </span>
                         <span className="text-slate-400 text-[10px] font-bold tracking-widest uppercase">Granular Access Control</span>
                     </div>
@@ -669,14 +682,14 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUserName
                                             {accountType === 'superadmin' && <CheckCircleIcon className="h-4 w-4 text-amber-600" />}
                                         </div>
                                         <p className="text-[10px] text-slate-500 font-medium mt-1">
-                                            Akses penuh ke seluruh modul, termasuk Riwayat Aktivitas dan Pengaturan Akses.
+                                            Akses penuh ke seluruh modul operasional dan Riwayat Aktivitas (Pengaturan akses akun tetap khusus superadmin2).
                                         </p>
                                     </button>
                                 </div>
                                 <div className="mt-2.5 px-3.5 py-2.5 bg-amber-50/80 border border-amber-200/80 rounded-xl flex items-center gap-2 text-[10px] font-bold text-amber-900">
                                     <span>🔒</span>
                                     <span>
-                                        Menu <strong>Riwayat Aktivitas</strong> dan <strong>Pengaturan Akses (Kelola Akun)</strong> dikunci khusus hanya untuk akun <strong>Superadmin</strong>.
+                                        Menu <strong>Pengaturan Akses (Kelola Akun)</strong> dikunci khusus hanya untuk akun <strong>superadmin2</strong>. Akun superadmin biasa tidak dapat mengubah hak akses.
                                     </span>
                                 </div>
                             </div>

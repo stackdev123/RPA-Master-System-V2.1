@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, EditIcon, XIcon } from './icons';
 import type { Coop, Customer, MasterItem, UserPermissions } from '../types';
-import { sortChickenParts, getSubModulePermission, canEditSubModule, checkIsSuperAdmin } from '../constants';
+import { sortChickenParts, getSubModulePermission, canEditSubModule, checkIsSuperAdmin, checkCanManageAccess } from '../constants';
 
 import DatabaseBackup from './DatabaseBackup';
 import UserManagementView from './UserManagementView';
@@ -20,6 +20,7 @@ interface DatabaseManagementProps {
     userRole?: string;
     userPermissions?: UserPermissions;
     isSuperAdmin?: boolean;
+    canManageAccess?: boolean;
     activeSubView?: View;
     onChangeSubView?: (view: View) => void;
 }
@@ -37,6 +38,7 @@ const DatabaseManagement: React.FC<DatabaseManagementProps> = ({
     userRole = '',
     userPermissions,
     isSuperAdmin: isSuperAdminProp,
+    canManageAccess: canManageAccessProp,
     activeSubView,
     onChangeSubView
 }) => {
@@ -44,15 +46,19 @@ const DatabaseManagement: React.FC<DatabaseManagementProps> = ({
         ? isSuperAdminProp
         : checkIsSuperAdmin(currentUserName, userRole);
 
+    const canManageAccess = canManageAccessProp !== undefined
+        ? canManageAccessProp
+        : checkCanManageAccess(currentUserName, userRole);
+
     const tabs: { id: View; label: string }[] = [
         { id: 'coops', label: 'Nama Kandang' },
         { id: 'plates', label: 'Plat Nomor' },
         { id: 'customers', label: 'Customer' },
         { id: 'items', label: 'Nama Item' },
         { id: 'backup', label: 'Backup Database' },
-        ...(isSuperAdmin ? [{ id: 'users' as View, label: 'Pengaturan Akses & Akun' }] : [])
+        ...(canManageAccess ? [{ id: 'users' as View, label: 'Pengaturan Akses & Akun' }] : [])
     ].filter(t => {
-        if (t.id === 'users') return isSuperAdmin;
+        if (t.id === 'users') return canManageAccess;
         if (isSuperAdmin) return true;
         return getSubModulePermission(userPermissions, 'database', t.id, isSuperAdmin) !== 'none';
     });
@@ -68,12 +74,12 @@ const DatabaseManagement: React.FC<DatabaseManagementProps> = ({
     };
 
     useEffect(() => {
-        if (!isSuperAdmin && activeView === 'users') {
+        if (!canManageAccess && activeView === 'users') {
             setActiveView(tabs[0]?.id || 'coops');
         } else if (tabs.length > 0 && !tabs.some(t => t.id === activeView)) {
             setActiveView(tabs[0].id);
         }
-    }, [isSuperAdmin, activeView, tabs]);
+    }, [canManageAccess, activeView, tabs]);
 
     const [newCoop, setNewCoop] = useState({ name: '', address: '' });
     const [newPlate, setNewPlate] = useState('');
@@ -371,7 +377,7 @@ const DatabaseManagement: React.FC<DatabaseManagementProps> = ({
             case 'backup':
                 return <DatabaseBackup />;
             case 'users':
-                return isSuperAdmin ? <UserManagementView currentUserName={currentUserName} userRole={userRole} /> : null;
+                return canManageAccess ? <UserManagementView currentUserName={currentUserName} userRole={userRole} /> : null;
         }
     }
 
@@ -388,7 +394,7 @@ const DatabaseManagement: React.FC<DatabaseManagementProps> = ({
                     </div>
                     <h2 className="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tight">{activeTabLabel}</h2>
                 </div>
-                {isSuperAdmin && activeView !== 'users' && (
+                {canManageAccess && activeView !== 'users' && (
                     <button
                         onClick={() => setActiveView('users')}
                         className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm hover:bg-slate-800 active:scale-95 transition-all self-start sm:self-auto flex items-center gap-2"

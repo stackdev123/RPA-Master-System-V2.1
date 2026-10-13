@@ -63,100 +63,38 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen w-full bg-white flex flex-col lg:flex-row selection:bg-red-100 selection:text-red-900">
-            {/* Left Showcase Panel (Desktop) */}
-            <div className="hidden lg:flex lg:w-[46%] xl:w-[50%] bg-slate-950 text-white p-12 xl:p-16 flex-col justify-between relative overflow-hidden">
-                {/* Subtle architectural grid & ambient glow */}
-                <div
-                    className="absolute inset-0 opacity-[0.04]"
-                    style={{
-                        backgroundImage:
-                            'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
-                        backgroundSize: '48px 48px',
-                    }}
-                />
-                <div className="absolute -top-32 -left-32 w-96 h-96 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
-
-                {/* Top Brand Header */}
-                <div className="relative z-10 flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-white/95 p-1.5 flex items-center justify-center shadow-lg">
+        <div className="min-h-screen w-full bg-slate-50 flex flex-col justify-center items-center px-4 py-12 selection:bg-red-100 selection:text-red-900">
+            <div className="w-full max-w-[420px]">
+                {/* Centered Clean Login Card */}
+                <div className="bg-white rounded-3xl border border-slate-200/80 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.08)] p-8 sm:p-10">
+                    {/* Brand Logo & Company Name */}
+                    <div className="flex flex-col items-center text-center mb-7">
                         <img
                             src="/logo trial.png"
                             alt="Logo PT Mitra Karya Foodindo"
-                            className="h-full w-auto object-contain"
+                            className="h-16 w-auto mb-3 object-contain"
                         />
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold text-white tracking-tight">
+                        <p className="text-sm font-semibold text-slate-900 tracking-tight">
                             PT Mitra Karya Foodindo
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-500 mt-0.5">
                             RPA Master System
-                        </p>
-                    </div>
-                </div>
-
-                {/* Center Editorial Message */}
-                <div className="relative z-10 max-w-md my-auto py-12">
-                    <h1 className="text-3xl xl:text-4xl font-semibold tracking-tight text-white leading-[1.2]">
-                        Sistem Manajemen Produksi, Inventaris & Distribusi Terpadu.
-                    </h1>
-                    <p className="mt-4 text-sm text-slate-400 leading-relaxed">
-                        Kelola alur pemotongan, stok gudang real-time, surat jalan, hingga penagihan faktur dalam satu ruang kerja yang cepat dan terintegrasi.
-                    </p>
-
-                    <div className="mt-10 pt-8 border-t border-white/10 grid grid-cols-3 gap-6 text-left">
-                        <div>
-                            <p className="text-xs text-slate-400">Sinkronisasi</p>
-                            <p className="mt-1 text-sm font-semibold text-white">Real-Time Cloud</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-slate-400">Mode Kerja</p>
-                            <p className="mt-1 text-sm font-semibold text-white">Multi-Tab Workspace</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-slate-400">Proteksi Data</p>
-                            <p className="mt-1 text-sm font-semibold text-white">Anti-Duplikasi</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Bottom Copyright */}
-                <div className="relative z-10 flex items-center justify-between text-xs text-slate-500">
-                    <span>&copy; 2026 PT Mitra Karya Foodindo</span>
-                    <span>Enterprise Portal</span>
-                </div>
-            </div>
-
-            {/* Right Login Form Panel */}
-            <div className="flex-1 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 xl:px-24 bg-white">
-                <div className="w-full max-w-[400px] mx-auto">
-                    {/* Mobile Logo */}
-                    <div className="lg:hidden flex flex-col items-center text-center mb-8">
-                        <img
-                            src="/logo trial.png"
-                            alt="Logo PT Mitra Karya Foodindo"
-                            className="h-20 w-auto mb-3 drop-shadow-sm"
-                        />
-                        <p className="text-xs text-slate-500 font-medium">
-                            PT Mitra Karya Foodindo · RPA Master System
                         </p>
                     </div>
 
                     {/* Heading */}
-                    <div className="mb-8 text-center lg:text-left">
-                        <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+                    <div className="mb-6 text-center">
+                        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
                             Masuk ke Akun
-                        </h2>
-                        <p className="mt-2 text-sm text-slate-500">
+                        </h1>
+                        <p className="mt-1.5 text-sm text-slate-500">
                             Silakan masukkan kredensial Anda untuk melanjutkan.
                         </p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-                        {/* Seamless Stacked / Unified Input Fields */}
-                        <div className="rounded-2xl border border-slate-200/90 bg-slate-50/50 overflow-hidden transition-all duration-200 shadow-[0_2px_10px_-4px_rgba(15,23,42,0.04)]">
+                        {/* Seamless Stacked Input Fields */}
+                        <div className="rounded-2xl border border-slate-200/90 bg-slate-50/50 overflow-hidden transition-all duration-200">
                             {/* Username Field */}
                             <div
                                 onClick={() => usernameInputRef.current?.focus()}
@@ -166,11 +104,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                         : 'hover:bg-slate-50/90'
                                 }`}
                             >
-                                <div
-                                    className={`absolute left-0 top-0 bottom-0 w-1 transition-all duration-200 ${
-                                        focusedField === 'username' ? 'bg-red-600' : 'bg-transparent'
-                                    }`}
-                                />
                                 <label
                                     htmlFor="username"
                                     className={`block text-[11px] font-semibold transition-colors ${
@@ -208,11 +141,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                         : 'hover:bg-slate-50/90'
                                 }`}
                             >
-                                <div
-                                    className={`absolute left-0 top-0 bottom-0 w-1 transition-all duration-200 ${
-                                        focusedField === 'password' ? 'bg-red-600' : 'bg-transparent'
-                                    }`}
-                                />
                                 <div className="flex items-center justify-between">
                                     <label
                                         htmlFor="password"
@@ -266,7 +194,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         {/* Error Message */}
                         {error && (
                             <div className="bg-red-50/80 text-red-600 text-xs font-medium py-3 px-4 rounded-xl border border-red-100 flex items-center gap-2.5 animate-fade-in">
-                                <span className="h-1.5 w-1.5 rounded-full bg-red-600 shrink-0" />
                                 <span>{error}</span>
                             </div>
                         )}
@@ -277,7 +204,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                 ref={submitBtnRef}
                                 type="submit"
                                 onKeyDown={handleSubmitKeyDown}
-                                className="w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-red-600 focus:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-500/15 transition-all duration-200 shadow-sm active:scale-[0.99]"
+                                className="w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-red-600 focus:bg-red-600 focus:outline-none focus:ring-4 focus:ring-red-500/15 transition-all duration-200 shadow-sm active:scale-[0.99] whitespace-nowrap"
                             >
                                 <span>Masuk ke Sistem</span>
                                 <svg
@@ -296,16 +223,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                 </svg>
                             </button>
                         </div>
-
-                        {/* Subtle Keyboard Navigation Guide */}
-                        
                     </form>
-
-                    {/* Mobile Copyright */}
-                    <p className="lg:hidden mt-12 text-center text-xs text-slate-400">
-                        &copy; 2026 PT Mitra Karya Foodindo. All rights reserved.
-                    </p>
                 </div>
+
+                {/* Copyright */}
+                <p className="mt-6 text-center text-xs text-slate-400">
+                    &copy; 2026 PT Mitra Karya Foodindo. All rights reserved.
+                </p>
             </div>
         </div>
     );

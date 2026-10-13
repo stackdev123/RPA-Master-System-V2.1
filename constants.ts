@@ -132,6 +132,24 @@ export const checkIsSuperAdmin = (username?: string, roleStr?: string): boolean 
   return false;
 };
 
+export const checkCanManageAccess = (username?: string, roleStr?: string): boolean => {
+  const u = (username || '').trim().toLowerCase();
+  const r = (roleStr || '').trim().toLowerCase();
+  // Hanya superadmin2 yang memiliki wewenang untuk mengatur hak akses dan akun
+  if (u === 'superadmin2' || r === 'superadmin2') {
+    return true;
+  }
+  if (roleStr && roleStr.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(roleStr);
+      const pr = (parsed?.role || '').trim().toLowerCase();
+      const pu = (parsed?.user || parsed?.name || '').trim().toLowerCase();
+      if (pr === 'superadmin2' || pu === 'superadmin2') return true;
+    } catch { }
+  }
+  return false;
+};
+
 export const getDefaultPermissions = (level: AccessLevel = 'edit', isSuperAdmin: boolean = false): UserPermissions => {
   const perms: UserPermissions = {};
   APP_MODULES.forEach(mod => {

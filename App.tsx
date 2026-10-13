@@ -46,7 +46,7 @@ import { db, supabase } from './supabaseClient';
 import { getOfflineQueue } from './offlineSync';
 import { 
     CHICKEN_PARTS, sortChickenParts, parseUserPermissions, getDefaultPermissions, 
-    canEditSubModule, canViewSubModule, checkIsSuperAdmin 
+    canEditSubModule, canViewSubModule, checkIsSuperAdmin, checkCanManageAccess 
 } from './constants';
 import { getAveragePrices } from './valuationService';
 import {
@@ -83,10 +83,16 @@ const App: React.FC = () => {
     });
 
     const currentUserPerms = useMemo(() => {
+        const canManageAccess = checkCanManageAccess(currentUserName, userRole);
         if (checkIsSuperAdmin(currentUserName, userRole)) {
-            return { isSuperAdmin: true, roleName: 'Superadmin', permissions: getDefaultPermissions('edit', true) };
+            return {
+                isSuperAdmin: true,
+                canManageAccess,
+                roleName: currentUserName.trim().toLowerCase() === 'superadmin2' ? 'Superadmin 2' : 'Superadmin',
+                permissions: getDefaultPermissions('edit', true)
+            };
         }
-        return parseUserPermissions(userRole);
+        return { ...parseUserPermissions(userRole), canManageAccess };
     }, [currentUserName, userRole]);
     const [onlineUsers, setOnlineUsers] = useState<{ user: string; location: string }[]>([]);
     const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
@@ -241,16 +247,17 @@ const App: React.FC = () => {
     }, [currentUserPerms]);
 
     const permittedDatabaseTabs = useMemo(() => {
+        const canManage = currentUserPerms.canManageAccess;
         const all = [
             { id: 'coops', label: 'NAMA KANDANG' },
             { id: 'plates', label: 'PLAT NOMOR' },
             { id: 'customers', label: 'CUSTOMER' },
             { id: 'items', label: 'NAMA ITEM' },
             { id: 'backup', label: 'BACKUP DATABASE' },
-            ...(currentUserPerms.isSuperAdmin ? [{ id: 'users', label: 'PENGATURAN AKSES & AKUN' }] : []),
+            ...(canManage ? [{ id: 'users', label: 'PENGATURAN AKSES & AKUN' }] : []),
         ];
         return all.filter(t => {
-            if (t.id === 'users') return currentUserPerms.isSuperAdmin;
+            if (t.id === 'users') return canManage;
             return canViewSubModule(currentUserPerms.permissions, 'database', t.id, currentUserPerms.isSuperAdmin);
         });
     }, [currentUserPerms]);
@@ -281,10 +288,12 @@ const App: React.FC = () => {
     }, [permittedFinanceTabs, financeTab]);
 
     useEffect(() => {
-        if (permittedDatabaseTabs.length > 0 && !permittedDatabaseTabs.some(t => t.id === databaseTab)) {
+        if (!currentUserPerms.canManageAccess && databaseTab === 'users') {
+            setDatabaseTab(permittedDatabaseTabs[0]?.id || 'coops');
+        } else if (permittedDatabaseTabs.length > 0 && !permittedDatabaseTabs.some(t => t.id === databaseTab)) {
             setDatabaseTab(permittedDatabaseTabs[0].id);
         }
-    }, [permittedDatabaseTabs, databaseTab]);
+    }, [permittedDatabaseTabs, databaseTab, currentUserPerms]);
 
     useEffect(() => {
         if (!isAuthenticated || !activeView) return;
@@ -381,6 +390,7 @@ const App: React.FC = () => {
     const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | null>(null);
     const [productionToEdit, setProductionToEdit] = useState<any | null>(null);
     const [pendingInvoiceOrder, setPendingInvoiceOrder] = useState<DeliveryOrder | null>(null);
+    const [hasLoadedInvoices, setHasLoadedInvoices] = useState(false);
     const [otherCursors, setOtherCursors] = useState<Record<string, { x: number, y: number, location?: string }>>({});
     const fetchIdRef = useRef(0);
     const loadedGroupsRef = useRef<Set<string>>(new Set());
@@ -434,15 +444,16 @@ const App: React.FC = () => {
         } else if (activeView === 'sales_orders') {
             groups.add('sales_orders');
             groups.add('delivery_orders');
-            if (salesOrderTab === 'sales_history') {
-                groups.add('invoices');
-            }
+            groups.add('invoices');
         } else if (activeView === 'logistics') {
             if (logisticsTab === 'stock') {
                 if (isHistoryOpen || isOpnameOpen) groups.add('stock_logs');
                 if (isTradingHistoryOpen) groups.add('trading_purchases');
                 if (isDisposalHistoryOpen) groups.add('stock_disposals');
-                if (isAllocating) groups.add('delivery_orders');
+                if (isAllocating) {
+                    groups.add('delivery_orders');
+                    groups.add('invoices');
+                }
             } else if (logisticsTab === 'delivery_orders') {
                 groups.add('delivery_orders');
                 groups.add('invoices');
@@ -451,9 +462,11 @@ const App: React.FC = () => {
             } else if (logisticsTab === 'returns') {
                 groups.add('do_returns');
                 groups.add('delivery_orders');
+                groups.add('invoices');
             } else if (logisticsTab === 'daily_recap') {
                 groups.add('production_logs');
                 groups.add('delivery_orders');
+                groups.add('invoices');
                 groups.add('trading_purchases');
                 groups.add('stock_disposals');
                 groups.add('stock_logs');
@@ -819,7 +832,10 @@ const App: React.FC = () => {
                     debts[c.name] = Math.max(0, runningBalance);
                 });
 
-                if (loadedGroupsRef.current.has('invoices')) setInvoices(allInvoices);
+                if (loadedGroupsRef.current.has('invoices')) {
+                    setInvoices(allInvoices);
+                    setHasLoadedInvoices(true);
+                }
                 if (loadedGroupsRef.current.has('invoices') || loadedGroupsRef.current.has('ledger')) setCustomerDebts(debts);
             }
         }
@@ -1170,6 +1186,7 @@ const App: React.FC = () => {
                     sessionStorage.removeItem('rpa_active_view');
                     sessionStorage.removeItem('rpa_open_tabs');
                 } catch { }
+                setHasLoadedInvoices(false);
                 setIsAuthenticated(true); setCurrentUserName(u); setUserRole(userData.role);
                 localStorage.setItem('isLoggedIn', 'true'); localStorage.setItem('username', u); localStorage.setItem('userRole', userData.role);
                 localStorage.setItem('loginTimestamp', Date.now().toString());
@@ -1181,6 +1198,7 @@ const App: React.FC = () => {
         if (currentUserName) {
             try { await db.addActivityLog(currentUserName, 'LOGOUT', 'users', currentUserName); } catch (e) { }
         }
+        setHasLoadedInvoices(false);
         setIsAuthenticated(false); setCurrentUserName(''); setUserRole('admin');
         setOpenTabs([]);
         try {
@@ -2016,8 +2034,26 @@ const App: React.FC = () => {
     }, [orderToInvoice, invoiceToEdit, salesOrders]);
 
     const readyDOCount = useMemo(() => {
-        return deliveryOrders.filter(o => (o.status === 'received' || o.status === 'revised') && !o.invoiceId).length;
-    }, [deliveryOrders]);
+        // Jangan hitung jika data invoices belum pernah dimuat (mencegah badge palsu saat awal buka aplikasi)
+        if (!hasLoadedInvoices || deliveryOrders.length === 0) return 0;
+
+        const invoicedSJSet = new Set<string>();
+        invoices.forEach(inv => {
+            const sjIds = String(inv.deliveryOrderId || '')
+                .split(',')
+                .map(s => s.trim().toLowerCase())
+                .filter(Boolean);
+            sjIds.forEach(id => invoicedSJSet.add(id));
+        });
+
+        return deliveryOrders.filter(o => {
+            const isReceived = o.status === 'received' || o.status === 'revised';
+            if (!isReceived) return false;
+            if (o.invoiceId) return false;
+            if (invoicedSJSet.has(o.id.trim().toLowerCase())) return false;
+            return true;
+        }).length;
+    }, [deliveryOrders, invoices, hasLoadedInvoices]);
 
     const subModuleMap = useMemo(() => ({
         production: {
@@ -2547,6 +2583,7 @@ const App: React.FC = () => {
                                     userRole={currentUserPerms.isSuperAdmin ? 'superadmin' : userRole}
                                     userPermissions={currentUserPerms.permissions}
                                     isSuperAdmin={currentUserPerms.isSuperAdmin}
+                                    canManageAccess={currentUserPerms.canManageAccess}
                                     activeSubView={databaseTab as any}
                                     onChangeSubView={(v) => setDatabaseTab(v)}
                                 />

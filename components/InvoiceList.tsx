@@ -100,12 +100,25 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
         return foundSO ? foundSO.id.trim() : '';
     };
 
+    const invoicedSJSet = useMemo(() => {
+        const set = new Set<string>();
+        invoices.forEach(inv => {
+            const sjIds = String(inv.deliveryOrderId || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+            sjIds.forEach(id => set.add(id));
+        });
+        return set;
+    }, [invoices]);
+
     // Delivery Orders that are received and waiting to be invoiced
     const readyDeliveryOrders = useMemo(() => {
-        return deliveryOrders.filter(order =>
-            (order.status === 'received' || order.status === 'revised') && !order.invoiceId
-        ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [deliveryOrders]);
+        return deliveryOrders.filter(order => {
+            const isReceived = order.status === 'received' || order.status === 'revised';
+            if (!isReceived) return false;
+            if (order.invoiceId) return false;
+            if (invoicedSJSet.has(order.id.trim().toLowerCase())) return false;
+            return true;
+        }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [deliveryOrders, invoicedSJSet]);
 
     // Grouping berdasarkan Nomor SO untuk Menu Combine SJ
     const soCombineGroups = useMemo(() => {
@@ -138,7 +151,8 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
             }
             const grp = map.get(soId)!;
             grp.allDOs.push(d);
-            if (d.invoiceId) {
+            const isAlreadyInvoiced = Boolean(d.invoiceId || invoicedSJSet.has(d.id.trim().toLowerCase()));
+            if (isAlreadyInvoiced) {
                 grp.invoicedDOs.push(d);
             } else {
                 grp.uninvoicedDOs.push(d);
@@ -163,7 +177,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
             const dateB = b.salesOrder?.date ? new Date(b.salesOrder.date).getTime() : (b.allDOs[0] ? new Date(b.allDOs[0].date).getTime() : 0);
             return dateB - dateA;
         });
-    }, [deliveryOrders, salesOrders, invoices]);
+    }, [deliveryOrders, salesOrders, invoices, invoicedSJSet]);
 
     // SO yang bisa di-combine (memiliki > 1 SJ dan masih ada SJ yang belum di-invoice)
     const actionableCombineGroups = useMemo(() => {
@@ -171,9 +185,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
     }, [soCombineGroups]);
 
     // Sub-tab selection: 'ready_dos' | 'invoices'
-    const [activeSubTab, setActiveSubTab] = useState<'ready_dos' | 'invoices'>(() => {
-        return readyDeliveryOrders.length > 0 ? 'ready_dos' : 'invoices';
-    });
+    const [activeSubTab, setActiveSubTab] = useState<'ready_dos' | 'invoices'>('invoices');
 
     // State untuk Dropdown Pilih SO / Combine SJ di tab DO Siap Di-Invoice
     const [selectedSOFilter, setSelectedSOFilter] = useState<string>('all');
