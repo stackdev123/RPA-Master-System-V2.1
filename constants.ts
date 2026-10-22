@@ -48,10 +48,10 @@ export const APP_MODULES: AppModuleConfig[] = [
   { 
     id: 'production', 
     label: 'Produksi & Laporan RPA', 
-    description: 'Input produksi harian, antrian produksi, dan Laporan Rekap Produksi',
+    description: 'Kedatangan LB, input hasil produksi, dan Laporan Rekap Produksi',
     subModules: [
-      { id: 'production.input', key: 'input', label: 'Input Pemotongan Ayam Hidup', category: 'Operasional RPA', description: 'Input data ayam datang dari kandang, timbang hidup, dan hasil karkas' },
-      { id: 'production.queue', key: 'queue', label: 'Antrian & Approval Produksi', category: 'Operasional RPA', description: 'Monitoring antrian hasil pemotongan dan persetujuan supervisor' },
+      { id: 'production.arrival', key: 'arrival', label: 'Kedatangan Live Bird (LB)', category: 'Operasional RPA', description: 'Input data kedatangan truk, supplier, nomor DO, dan timbangan awal ayam hidup' },
+      { id: 'production.input', key: 'input', label: 'Input Hasil Pemotongan / Yield', category: 'Operasional RPA', description: 'Input hasil pemotongan per truk dengan menarik data kedatangan LB' },
       { id: 'production.history', key: 'history', label: 'Laporan Rekap & Riwayat Produksi', category: 'Laporan RPA', description: 'Rekap harian pemotongan ayam hidup, persentase karkas, konversi, serta izin edit/hapus catatan produksi' },
     ]
   },
@@ -180,6 +180,9 @@ export const getSubModulePermission = (
     const fullKey = subKey.includes('.') ? subKey : `${moduleId}.${subKey}`;
     if (permissions[fullKey] !== undefined) return permissions[fullKey];
     if (permissions[subKey] !== undefined) return permissions[subKey];
+    if (moduleId === 'production' && subKey === 'arrival' && permissions['production.input'] !== undefined) {
+      return permissions['production.input'];
+    }
   }
   return permissions[moduleId] || 'none';
 };

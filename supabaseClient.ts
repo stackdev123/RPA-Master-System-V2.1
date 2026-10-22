@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { SalesOrder, DOReturnRecord, UserAccount } from './types';
+import type { SalesOrder, DOReturnRecord, UserAccount, LBArrivalRecord } from './types';
 import {
   saveCachedGroupData,
   getCachedGroupData,
@@ -798,7 +798,10 @@ export const db = {
   },
 
   addProductionLogs: async (logs: any[], autoApply: boolean, username: string) => {
-    const rowsToInsert = logs.map(l => ({ ...l, is_applied: autoApply }));
+    const rowsToInsert = logs.map(l => {
+      const { nomor_do, ...rest } = l;
+      return { ...rest, is_applied: autoApply };
+    });
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         throw new Error('Offline mode');
@@ -1709,6 +1712,67 @@ export const db = {
       console.warn('Failed to delete from /api/do-returns:', e);
     }
     await db.addActivityLog(username, 'DELETE_DO_RETURN', 'delivery_orders', id);
+  },
+
+  getLBArrivals: async (): Promise<LBArrivalRecord[]> => {
+    try {
+      const res = await fetch('/api/lb-arrivals');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          localStorage.setItem('rpa_lb_arrivals', JSON.stringify(data));
+          return data;
+        }
+      }
+    } catch (e) {
+      console.warn('API /api/lb-arrivals unavailable, reading local storage:', e);
+    }
+    const cached = localStorage.getItem('rpa_lb_arrivals');
+    return cached ? JSON.parse(cached) : [];
+  },
+
+  saveLBArrival: async (record: LBArrivalRecord, username: string): Promise<void> => {
+    const cached = localStorage.getItem('rpa_lb_arrivals');
+    const arrivals: LBArrivalRecord[] = cached ? JSON.parse(cached) : [];
+    const idx = arrivals.findIndex(a => a.id === record.id);
+    if (idx >= 0) {
+      arrivals[idx] = { ...arrivals[idx], ...record };
+    } else {
+      arrivals.unshift(record);
+    }
+    localStorage.setItem('rpa_lb_arrivals', JSON.stringify(arrivals));
+
+    try {
+      await fetch('/api/lb-arrivals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+      });
+    } catch (e) {
+      console.warn('Failed to post to /api/lb-arrivals:', e);
+    }
+    await db.addActivityLog(username, 'SAVE_LB_ARRIVAL', 'production_logs', record.id, {
+      truckNumber: record.truckNumber,
+      noDo: record.noDo,
+      coopName: record.coopName,
+      initialKg: record.initialKg,
+      status: record.status
+    });
+  },
+
+  deleteLBArrival: async (id: string, username: string): Promise<void> => {
+    const cached = localStorage.getItem('rpa_lb_arrivals');
+    if (cached) {
+      const arrivals: LBArrivalRecord[] = JSON.parse(cached);
+      const filtered = arrivals.filter(a => a.id !== id);
+      localStorage.setItem('rpa_lb_arrivals', JSON.stringify(filtered));
+    }
+    try {
+      await fetch(`/api/lb-arrivals/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch (e) {
+      console.warn('Failed to delete from /api/lb-arrivals:', e);
+    }
+    await db.addActivityLog(username, 'DELETE_LB_ARRIVAL', 'production_logs', id);
   },
 
   syncOfflineQueue: async (): Promise<{ syncedCount: number; remainingCount: number }> => {

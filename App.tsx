@@ -1,3 +1,4 @@
+import { LBArrivalForm } from "./components/LBArrivalForm";
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header, { WorkspaceTab } from './components/Header';
 import ProductionForm from './components/ProductionForm';
@@ -55,7 +56,7 @@ import {
     type StockItem, type Coop, type Customer, type MasterItem, type Invoice, type DeliveryOrder,
     type SupabaseInvoice, type ExpenseRecord, type SalaryRecord, type LedgerEntry,
     type StockLog, type SupabaseProductionLog, type TradingPurchaseRecord, type StockDisposalRecord, type AllocationItem, type ActivityLog,
-    type SalesOrder, type DOReturnRecord, type AppModuleId
+    type SalesOrder, type DOReturnRecord, type AppModuleId, type LBArrivalRecord
 } from './types';
 
 const App: React.FC = () => {
@@ -100,10 +101,10 @@ const App: React.FC = () => {
     const [pendingSyncCount, setPendingSyncCount] = useState<number>(() => getOfflineQueue().length);
 
     const getLightestPermittedLanding = useCallback((perms: Record<string, string>, isSuper: boolean) => {
-        // 1. Prioritas utama sesuai permintaan: Produksi (Input Produksi)
         if (isSuper || perms.production !== 'none') {
-            const canInput = canViewSubModule(perms, 'production', 'input', isSuper) || canViewSubModule(perms, 'production', 'queue', isSuper);
-            return { view: 'production', subTab: canInput ? 'input' : 'report' };
+            if (canViewSubModule(perms, 'production', 'arrival', isSuper)) return { view: 'production', subTab: 'arrival' };
+            if (canViewSubModule(perms, 'production', 'input', isSuper)) return { view: 'production', subTab: 'input' };
+            return { view: 'production', subTab: 'report' };
         }
         // 2. Jika tidak punya akses produksi, pilih modul dengan penarikan data paling sedikit:
         // Logistik -> Inventaris (hanya menarik data master ringan)
@@ -155,8 +156,8 @@ const App: React.FC = () => {
     const [productionTab, setProductionTab] = useState(() => {
         try {
             localStorage.removeItem('rpa_production_tab');
-            return sessionStorage.getItem('rpa_production_tab') || 'input';
-        } catch { return 'input'; }
+            return sessionStorage.getItem('rpa_production_tab') || 'arrival';
+        } catch { return 'arrival'; }
     });
     const [salesOrderTab, setSalesOrderTab] = useState(() => {
         try {
@@ -189,10 +190,17 @@ const App: React.FC = () => {
     const permittedProductionTabs = useMemo(() => {
         const tabs: { id: string; label: string }[] = [];
         if (
+            canViewSubModule(currentUserPerms.permissions, 'production', 'arrival', currentUserPerms.isSuperAdmin) ||
             canViewSubModule(currentUserPerms.permissions, 'production', 'input', currentUserPerms.isSuperAdmin) ||
             canViewSubModule(currentUserPerms.permissions, 'production', 'queue', currentUserPerms.isSuperAdmin)
         ) {
-            tabs.push({ id: 'input', label: 'INPUT PRODUKSI' });
+            tabs.push({ id: 'arrival', label: 'KEDATANGAN LB' });
+        }
+        if (
+            canViewSubModule(currentUserPerms.permissions, 'production', 'input', currentUserPerms.isSuperAdmin) ||
+            canViewSubModule(currentUserPerms.permissions, 'production', 'queue', currentUserPerms.isSuperAdmin)
+        ) {
+            tabs.push({ id: 'input', label: 'INPUT HASIL PRODUKSI' });
         }
         if (canViewSubModule(currentUserPerms.permissions, 'production', 'history', currentUserPerms.isSuperAdmin)) {
             tabs.push({ id: 'report', label: 'LAPORAN PRODUKSI' });
@@ -368,6 +376,9 @@ const App: React.FC = () => {
     const [isManualSJOpen, setIsManualSJOpen] = useState(false);
     const [isManualInvoiceOpen, setIsManualInvoiceOpen] = useState(false);
     const [isEndingInventoryOpen, setIsEndingInventoryOpen] = useState(false);
+    // LB Arrivals states
+    const [lbArrivals, setLBArrivals] = useState<LBArrivalRecord[]>([]);
+    const [selectedArrivalForProduction, setSelectedArrivalForProduction] = useState<LBArrivalRecord | null>(null);
 
     // Sales Order & DO Return states
     const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
@@ -922,6 +933,14 @@ const App: React.FC = () => {
             Object.assign(rawDataRef.current, partialData);
             groupsToFetch.forEach(g => loadedGroupsRef.current.add(g));
             applyFetchedDataToState(groupsToFetch);
+            if (groupsToFetch.includes('production_logs') || groupsToFetch.includes('master')) {
+                try {
+                    const arrivals = await db.getLBArrivals();
+                    setLBArrivals(arrivals);
+                } catch (e) {
+                    console.warn("Failed to get LB Arrivals:", e);
+                }
+            }
             setDbError(null);
             if (!isSilent) setIsLoading(false);
         } catch (error: any) {
@@ -930,6 +949,12 @@ const App: React.FC = () => {
             if (!isSilent) setIsLoading(false);
         }
     }, [getRequiredGroups, applyFetchedDataToState]);
+
+    useEffect(() => {
+        if (activeView === 'production' && isAuthenticated) {
+            db.getLBArrivals().then(setLBArrivals).catch(console.warn);
+        }
+    }, [activeView, isAuthenticated]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -2294,18 +2319,116 @@ const App: React.FC = () => {
                     <>
                         {activeView === 'production' && (
                             <div className="space-y-4">
-                                {productionTab === 'input' ? (
+                                {productionTab === 'arrival' ? (
+                                    <LBArrivalForm 
+                                        onSubmit={async (arrivalData) => {
+                                            setIsLoading(true);
+                                            try {
+                                                const newRecord: LBArrivalRecord = {
+                                                    id: `lba_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                                                    date: arrivalData.date,
+                                                    truckNumber: arrivalData.truckNumber,
+                                                    noDo: arrivalData.noDo,
+                                                    coopName: arrivalData.coopName,
+                                                    driver: arrivalData.driver,
+                                                    licensePlate: arrivalData.licensePlate,
+                                                    initialEkor: arrivalData.initialEkor,
+                                                    initialKg: arrivalData.initialKg,
+                                                    mortality: arrivalData.mortality,
+                                                    mortalityKg: arrivalData.mortalityKg,
+                                                    pricePerKg: arrivalData.pricePerKg,
+                                                    status: 'pending',
+                                                    timestamp: new Date().toISOString(),
+                                                    createdBy: currentUserName
+                                                };
+                                                await db.saveLBArrival(newRecord, currentUserName);
+                                                const updated = await db.getLBArrivals();
+                                                setLBArrivals(updated);
+                                            } catch (err: any) {
+                                                console.error("Save LB Arrival Error:", err);
+                                                throw err;
+                                            } finally {
+                                                setIsLoading(false);
+                                            }
+                                        }}
+                                        coops={coops}
+                                        licensePlates={licensePlates}
+                                        existingArrivals={lbArrivals}
+                                        onGoToProduction={(arr) => {
+                                            setSelectedArrivalForProduction(arr);
+                                            setProductionTab('input');
+                                        }}
+                                        onDeleteArrival={async (id) => {
+                                            setIsLoading(true);
+                                            try {
+                                                await db.deleteLBArrival(id, currentUserName);
+                                                const updated = await db.getLBArrivals();
+                                                setLBArrivals(updated);
+                                            } catch (err: any) {
+                                                alert('Gagal menghapus: ' + err.message);
+                                            } finally {
+                                                setIsLoading(false);
+                                            }
+                                        }}
+                                    />
+                                ) : productionTab === 'input' ? (
                                     <div className="space-y-6">
                                         {canViewSubModule(currentUserPerms.permissions, 'production', 'input', currentUserPerms.isSuperAdmin) && (
-                                            <ProductionForm onSubmit={async (n: number, c: string, d: string, l: string, e: number, k: number, m: number, mk: number, it: Record<string, number>, pr: number, auto: boolean, date: string) => {
-                                                setIsLoading(true);
-                                                try {
-                                                    await db.addProductionLogs(Object.entries(it).filter(([_, q]) => Number(q) > 0).map(([i, q]) => ({ tanggal_produksi: date, item_name: i, qty: Number(q), ekor: e, kg: k, mobil: n.toString(), plat: l, harga_beli_kg: pr, kematian_ekor: m, kematian_kg: mk, nama_kandang: c, driver: d })), auto, currentUserName);
-                                                    await fetchInitialData(true);
-                                                } finally {
-                                                    setIsLoading(false);
-                                                }
-                                            }} coops={coops} licensePlates={licensePlates} masterItems={masterItems} existingLogs={productionLogs} />
+                                            <ProductionForm 
+                                                onSubmit={async (n: number, c: string, d: string, l: string, noDo: string, e: number, k: number, m: number, mk: number, it: Record<string, number>, pr: number, auto: boolean, date: string, arrivalId?: string) => {
+                                                    setIsLoading(true);
+                                                    try {
+                                                        const driverInfo = noDo ? `${d} (DO: ${noDo})` : d;
+                                                        await db.addProductionLogs(
+                                                            Object.entries(it)
+                                                                .filter(([_, q]) => Number(q) > 0)
+                                                                .map(([i, q]) => ({ 
+                                                                    tanggal_produksi: date, 
+                                                                    item_name: i, 
+                                                                    qty: Number(q), 
+                                                                    ekor: e, 
+                                                                    kg: k, 
+                                                                    mobil: n.toString(), 
+                                                                    plat: l, 
+                                                                    harga_beli_kg: pr, 
+                                                                    kematian_ekor: m, 
+                                                                    kematian_kg: mk, 
+                                                                    nama_kandang: c, 
+                                                                    driver: driverInfo,
+                                                                    nomor_do: noDo 
+                                                                })), 
+                                                            auto, 
+                                                            currentUserName
+                                                        );
+
+                                                        if (arrivalId) {
+                                                            const target = lbArrivals.find(a => a.id === arrivalId);
+                                                            if (target) {
+                                                                await db.saveLBArrival({ ...target, status: 'completed' }, currentUserName);
+                                                            }
+                                                        } else {
+                                                            const match = lbArrivals.find(a => a.status !== 'completed' && a.truckNumber === n && a.date === date);
+                                                            if (match) {
+                                                                await db.saveLBArrival({ ...match, status: 'completed' }, currentUserName);
+                                                            }
+                                                        }
+                                                        setSelectedArrivalForProduction(null);
+                                                        const updatedArrivals = await db.getLBArrivals();
+                                                        setLBArrivals(updatedArrivals);
+                                                        await fetchInitialData(true);
+                                                    } finally {
+                                                        setIsLoading(false);
+                                                    }
+                                                }} 
+                                                coops={coops} 
+                                                licensePlates={licensePlates} 
+                                                masterItems={masterItems} 
+                                                existingLogs={productionLogs} 
+                                                pendingLogs={pendingLogs}
+                                                lbArrivals={lbArrivals}
+                                                selectedArrival={selectedArrivalForProduction}
+                                                onClearSelectedArrival={() => setSelectedArrivalForProduction(null)}
+                                            />
                                         )}
                                         {pendingLogs.length > 0 && canViewSubModule(currentUserPerms.permissions, 'production', 'queue', currentUserPerms.isSuperAdmin) && (
                                             <div className="bg-slate-900/5 p-4 rounded-[2.5rem] border border-slate-200">

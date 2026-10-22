@@ -26,6 +26,7 @@ function getLocalIP() {
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SO_FILE = path.join(DATA_DIR, 'sales_orders.json');
 const RETURNS_FILE = path.join(DATA_DIR, 'do_returns.json');
+const ARRIVALS_FILE = path.join(DATA_DIR, 'lb_arrivals.json');
 
 function ensureDataFiles() {
     if (!fs.existsSync(DATA_DIR)) {
@@ -36,6 +37,9 @@ function ensureDataFiles() {
     }
     if (!fs.existsSync(RETURNS_FILE)) {
         fs.writeFileSync(RETURNS_FILE, JSON.stringify([]));
+    }
+    if (!fs.existsSync(ARRIVALS_FILE)) {
+        fs.writeFileSync(ARRIVALS_FILE, JSON.stringify([]));
     }
 }
 
@@ -135,6 +139,44 @@ async function startServer() {
       const returns = readJsonFile(RETURNS_FILE);
       const filtered = returns.filter((r: any) => r.id !== id);
       writeJsonFile(RETURNS_FILE, filtered);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // LB Arrivals API
+  app.get("/api/lb-arrivals", (req: Request, res: Response) => {
+    const arrivals = readJsonFile(ARRIVALS_FILE);
+    res.json(arrivals);
+  });
+
+  app.post("/api/lb-arrivals", (req: Request, res: Response) => {
+    try {
+      const arrival = req.body;
+      if (!arrival || !arrival.id) {
+        return res.status(400).json({ error: "Data kedatangan LB tidak valid" });
+      }
+      const arrivals = readJsonFile(ARRIVALS_FILE);
+      const existingIdx = arrivals.findIndex((a: any) => a.id === arrival.id);
+      if (existingIdx >= 0) {
+        arrivals[existingIdx] = { ...arrivals[existingIdx], ...arrival, updatedAt: new Date().toISOString() };
+      } else {
+        arrivals.unshift({ ...arrival, timestamp: arrival.timestamp || new Date().toISOString() });
+      }
+      writeJsonFile(ARRIVALS_FILE, arrivals);
+      res.json({ success: true, record: arrival });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/lb-arrivals/:id", (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const arrivals = readJsonFile(ARRIVALS_FILE);
+      const filtered = arrivals.filter((a: any) => a.id !== id);
+      writeJsonFile(ARRIVALS_FILE, filtered);
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

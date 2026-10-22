@@ -51,6 +51,24 @@ export interface StockDisposalRecord {
   keterangan: string;
 }
 
+export interface LBArrivalRecord {
+  id: string;
+  date: string;
+  truckNumber: number;
+  noDo: string;
+  coopName: string;
+  driver: string;
+  licensePlate: string;
+  initialEkor: number;
+  initialKg: number;
+  mortality: number;
+  mortalityKg: number;
+  pricePerKg: number;
+  status: 'pending' | 'completed';
+  timestamp?: string;
+  createdBy?: string;
+}
+
 // Database: production_logs
 export interface SupabaseProductionLog {
   id: string;
