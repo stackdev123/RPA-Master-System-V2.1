@@ -898,7 +898,7 @@ const LedgerView: React.FC<LedgerViewProps> = ({
                     <div className="flex items-center gap-5">
                         <img src="/logo trial.png" alt="Logo" className="h-20 w-auto grayscale" />
                         <div style={{ lineHeight: '1.2' }}>
-                            <h2 className="text-3xl font-black uppercase">PT Mitra Karya Foodindo</h2>
+                            <h2 className="text-3xl font-black uppercase">PT Mitra Karya Chicken</h2>
                             <p className="text-[12px] font-bold uppercase tracking-widest mt-1">Rumah Potong Ayam & Supplier</p>
                             <p className="text-[10px] font-medium uppercase mt-1 opacity-50">LAPORAN PIUTANG PELANGGAN</p>
                         </div>
@@ -1032,7 +1032,7 @@ const LedgerView: React.FC<LedgerViewProps> = ({
                                     <div className="flex items-center gap-5">
                                         <img src="/logo trial.png" alt="Logo" className="h-16 w-auto grayscale" />
                                         <div style={{ lineHeight: '1.2' }}>
-                                            <h2 className="text-2xl font-black uppercase">PT Mitra Karya Foodindo</h2>
+                                            <h2 className="text-2xl font-black uppercase">PT Mitra Karya Chicken</h2>
                                             <p className="text-[10px] font-bold uppercase tracking-widest mt-1">Rumah Potong Ayam & Supplier</p>
                                         </div>
                                     </div>
@@ -1130,7 +1130,7 @@ const LedgerView: React.FC<LedgerViewProps> = ({
                                     <img src="/logo trial.png" alt="Logo" className="h-14 w-auto grayscale" />
                                     <div style={{ lineHeight: '1.2' }}>
                                         <h2 className="text-xl font-black uppercase">REKAP PIUTANG GLOBAL</h2>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest mt-1">PT Mitra Karya Foodindo</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest mt-1">PT Mitra Karya Chicken</p>
                                     </div>
                                 </div>
                                 <div className="text-right" style={{ lineHeight: '1.2' }}>

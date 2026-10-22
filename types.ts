@@ -415,3 +415,100 @@ export interface UserAccount {
   permissions?: UserPermissions;
   created_at?: string;
 }
+
+// -------------------------------------------------------------
+// RAW MATERIAL DIRECT PURCHASES (Karkas, Boneless, dll)
+// -------------------------------------------------------------
+export interface RawMaterialPurchase {
+  id: string;
+  tanggal: string; // YYYY-MM-DD
+  supplier: string;
+  item_name: string; // e.g. "Karkas", "Boneless Dada", "Boneless Paha", etc.
+  qty_kg: number;
+  qty_ekor?: number;
+  harga_per_kg: number;
+  total_harga: number;
+  nomor_faktur?: string;
+  catatan?: string;
+  auto_add_stock?: boolean;
+  timestamp: string;
+  created_by?: string;
+}
+
+// -------------------------------------------------------------
+// DAILY STOCK VALUATION (HARGA PASAR HARIAN PER ITEM)
+// -------------------------------------------------------------
+export interface DailyStockItemPrice {
+  id: string;
+  date: string; // YYYY-MM-DD
+  item_name: string;
+  price_per_kg: number;
+  notes?: string;
+  timestamp: string;
+  updated_by?: string;
+}
+
+export interface DailyStockValuationSnapshot {
+  id: string;
+  date: string; // YYYY-MM-DD
+  items: {
+    item_name: string;
+    stock_kg: number;
+    price_per_kg: number;
+    subtotal_val: number;
+  }[];
+  total_stock_kg: number;
+  total_valuation_rp: number;
+  timestamp: string;
+  updated_by?: string;
+}
+
+// -------------------------------------------------------------
+// PACKING MATERIALS & STOCK OPNAME (Plastik, Karung, dll)
+// -------------------------------------------------------------
+export interface PackingMaterial {
+  id: string;
+  name: string; // "Plastik 1 Kg", "Plastik 2 Kg", "Plastik Curah", "Karung 25 Kg", "Lakban / Seal", "Tali Rafia"
+  category: 'plastik' | 'karung' | 'lainnya';
+  unit: string; // 'lembar', 'roll', 'kg', 'pack', 'pcs'
+  current_stock: number;
+  min_stock_alert: number;
+  unit_cost: number; // Biaya per unit (Rp) untuk perhitungan HPP
+  notes?: string;
+}
+
+export interface PackingOpnameLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  material_id: string;
+  material_name: string;
+  system_stock: number;
+  physical_stock: number;
+  difference: number; // physical_stock - system_stock
+  unit: string;
+  notes?: string;
+  operator: string;
+  timestamp: string;
+}
+
+export interface PackingUsageItem {
+  material_id: string;
+  material_name: string;
+  qty_used: number;
+  unit: string;
+  unit_cost: number;
+  total_cost: number;
+}
+
+export interface PackingUsageLog {
+  id: string;
+  production_id?: string;
+  date: string;
+  truck_number?: number;
+  no_do?: string;
+  items: PackingUsageItem[];
+  total_cost: number;
+  notes?: string;
+  operator?: string;
+  timestamp: string;
+}

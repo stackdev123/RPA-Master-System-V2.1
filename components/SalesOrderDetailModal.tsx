@@ -82,7 +82,7 @@ export const SalesOrderDetailModal: React.FC<SalesOrderDetailModalProps> = ({
             <div className="flex items-center gap-3">
               <img src="/logo trial.png" alt="Logo" className="w-12 h-12 object-contain" />
               <div>
-                <h1 className="font-black text-slate-900 text-base uppercase tracking-tight">PT Mitra Karya Foodindo</h1>
+                <h1 className="font-black text-slate-900 text-base uppercase tracking-tight">PT Mitra Karya Chicken</h1>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Rumah Potong Ayam (RPA)</p>
                 <p className="text-[10px] text-slate-400">Jl. Industri Unggas Sejahtera, Bogor</p>
               </div>

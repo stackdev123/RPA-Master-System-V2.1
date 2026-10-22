@@ -13,6 +13,20 @@ interface HPPViewProps {
 
 const HPPView: React.FC<HPPViewProps> = ({ productionHistory = [], expenses = [], invoices = [], masterItems = [] }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+    const [packingUsages, setPackingUsages] = useState<any[]>([]);
+
+    React.useEffect(() => {
+        fetch(`/api/packing-usages?date=${selectedDate}`)
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setPackingUsages(data);
+            })
+            .catch(() => {});
+    }, [selectedDate]);
+
+    const totalPackingCost = useMemo(() => {
+        return packingUsages.reduce((sum, u) => sum + (Number(u.total_cost) || 0), 0);
+    }, [packingUsages]);
 
     const calculationData = useMemo(() => {
         const targetDate = new Date(selectedDate);
@@ -56,7 +70,7 @@ const HPPView: React.FC<HPPViewProps> = ({ productionHistory = [], expenses = []
         });
 
         const totalOperationalCost = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
-        const grandTotalCost = totalRawMaterialCost + totalOperationalCost;
+        const grandTotalCost = totalRawMaterialCost + totalPackingCost + totalOperationalCost;
 
         // 3. Harga Jual Rata-rata per Item (Simple Average Logic)
         const itemPricesList: { [key: string]: number[] } = {};
@@ -273,22 +287,26 @@ const HPPView: React.FC<HPPViewProps> = ({ productionHistory = [], expenses = []
                 </div>
 
                 {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 relative z-10">
-                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-white shadow-sm">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Input (LB)</p>
-                        <p className="text-3xl font-black text-slate-900 tracking-tight">{formatCheck(calculationData.totalInputLB, 1)} <span className="text-xs text-slate-300">Kg</span></p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12 relative z-10">
+                    <div className="bg-slate-50/80 p-6 rounded-[2.5rem] border border-white shadow-sm">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Input (LB)</p>
+                        <p className="text-2xl font-black text-slate-900 tracking-tight">{formatCheck(calculationData.totalInputLB, 1)} <span className="text-xs text-slate-300">Kg</span></p>
                     </div>
-                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-white shadow-sm">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Output (PROD)</p>
-                        <p className="text-3xl font-black text-slate-900 tracking-tight">{formatCheck(calculationData.totalOutputKg, 1)} <span className="text-xs text-slate-300">Kg</span></p>
+                    <div className="bg-slate-50/80 p-6 rounded-[2.5rem] border border-white shadow-sm">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Output (PROD)</p>
+                        <p className="text-2xl font-black text-slate-900 tracking-tight">{formatCheck(calculationData.totalOutputKg, 1)} <span className="text-xs text-slate-300">Kg</span></p>
                     </div>
-                    <div className="bg-slate-50/80 p-8 rounded-[2.5rem] border border-white shadow-sm">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Operasional</p>
-                        <p className="text-2xl font-black text-slate-900 tracking-tight">Rp {formatCheck(calculationData.totalOperationalCost, 0)}</p>
+                    <div className="bg-slate-50/80 p-6 rounded-[2.5rem] border border-white shadow-sm">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Biaya Kemasan Packing</p>
+                        <p className="text-xl font-black text-cyan-700 tracking-tight">Rp {formatCheck(totalPackingCost, 0)}</p>
                     </div>
-                    <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200 ring-4 ring-indigo-50/50">
-                        <p className="text-[9px] font-black text-indigo-200 uppercase tracking-widest mb-2 uppercase">Grand Total Biaya</p>
-                        <p className="text-3xl font-black tracking-tight">Rp {formatCheck(calculationData.grandTotalCost, 0)}</p>
+                    <div className="bg-slate-50/80 p-6 rounded-[2.5rem] border border-white shadow-sm">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Operasional</p>
+                        <p className="text-xl font-black text-slate-900 tracking-tight">Rp {formatCheck(calculationData.totalOperationalCost, 0)}</p>
+                    </div>
+                    <div className="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200 ring-4 ring-indigo-50/50 col-span-2 md:col-span-1">
+                        <p className="text-[9px] font-black text-indigo-200 uppercase tracking-widest mb-1">Grand Total Biaya</p>
+                        <p className="text-2xl font-black tracking-tight">Rp {formatCheck(calculationData.grandTotalCost, 0)}</p>
                     </div>
                 </div>
                 

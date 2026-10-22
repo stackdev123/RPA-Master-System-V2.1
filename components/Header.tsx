@@ -174,7 +174,7 @@ const Header: React.FC<HeaderProps> = ({
                     <div className="flex items-center gap-2.5 shrink-0">
                         <img src="/logo trial.png" alt="Logo" className="w-7 h-7 object-contain" />
                         <div className="hidden sm:flex items-baseline gap-2">
-                            <span className="font-bold text-slate-900 text-[13px] tracking-tight">PT Mitra Karya Foodindo</span>
+                            <span className="font-bold text-slate-900 text-[13px] tracking-tight">PT Mitra Karya Chicken</span>
                             <span className="hidden xl:inline-block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">RPA</span>
                         </div>
                     </div>

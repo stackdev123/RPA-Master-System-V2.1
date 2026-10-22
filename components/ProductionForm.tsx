@@ -17,7 +17,8 @@ interface ProductionFormProps {
         pricePerKg: number, 
         autoApply: boolean, 
         date: string,
-        arrivalId?: string
+        arrivalId?: string,
+        packingUsage?: { material_id: string; material_name: string; qty_used: number; unit: string; unit_cost: number; total_cost: number }[]
     ) => Promise<void> | void;
     coops: Coop[];
     licensePlates: string[];
@@ -108,6 +109,38 @@ const ProductionForm: React.FC<ProductionFormProps> = ({
     const [analysisCoop, setAnalysisCoop] = useState('all');
 
     const [rows, setRows] = useState<FormRow[]>([]);
+    const [packingMaterials, setPackingMaterials] = useState<any[]>([]);
+    const [packingRows, setPackingRows] = useState<{ id: string; materialId: string; qty: string }[]>([]);
+
+    useEffect(() => {
+        fetch('/api/packing-materials')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setPackingMaterials(data);
+            })
+            .catch(() => {});
+    }, []);
+
+    const calculatedPackingUsage = useMemo(() => {
+        return packingRows.map(row => {
+            const mat = packingMaterials.find(m => m.id === row.materialId);
+            const qty = parseFloat(row.qty) || 0;
+            const unitCost = Number(mat?.unit_cost) || 0;
+            const totalCost = qty * unitCost;
+            return {
+                material_id: row.materialId,
+                material_name: mat?.name || 'Bahan Kemasan',
+                qty_used: qty,
+                unit: mat?.unit || 'lembar',
+                unit_cost: unitCost,
+                total_cost: totalCost
+            };
+        }).filter(p => p.material_id && p.qty_used > 0);
+    }, [packingRows, packingMaterials]);
+
+    const totalPackingCost = useMemo(() => {
+        return calculatedPackingUsage.reduce((s, p) => s + p.total_cost, 0);
+    }, [calculatedPackingUsage]);
 
     // Efek saat props selectedArrival dikirimkan (misal dari tombol "Input Hasil Produksi" di modul Kedatangan LB)
     useEffect(() => {
@@ -315,7 +348,8 @@ const ProductionForm: React.FC<ProductionFormProps> = ({
                 pricePerKg, 
                 autoApply, 
                 date,
-                selectedArrivalId || undefined
+                selectedArrivalId || undefined,
+                calculatedPackingUsage
             );
             
             setSelectedArrivalId('');
@@ -330,6 +364,7 @@ const ProductionForm: React.FC<ProductionFormProps> = ({
             setMortality(0); 
             setMortalityKg(0); 
             setPricePerKg(0);
+            setPackingRows([]);
             setRows(masterItems.map(m => ({ id: m.name, name: m.name, qty: '' })));
         } catch (error) {
             console.error("Submit Error:", error);
@@ -569,6 +604,82 @@ const ProductionForm: React.FC<ProductionFormProps> = ({
                                 />
                             </div>
                         </div>
+                    </div>
+
+                    {/* KARTU PEMAKAIAN BAHAN KEMASAN / PLASTIK */}
+                    <div className="bg-white p-4 md:p-5 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-[10px] md:text-xs font-black text-slate-800 uppercase tracking-tight flex items-center gap-1.5">
+                                <span className="w-1.5 h-3.5 bg-cyan-600 rounded-full" />
+                                Pemakaian Packing (Plastik / Karung)
+                            </h4>
+                            <button
+                                type="button"
+                                onClick={() => setPackingRows(prev => [...prev, { id: `prow_${Date.now()}`, materialId: packingMaterials[0]?.id || '', qty: '' }])}
+                                className="text-[9px] font-black uppercase text-cyan-600 hover:text-cyan-800 bg-cyan-50 hover:bg-cyan-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                            >
+                                + Tambah
+                            </button>
+                        </div>
+
+                        {packingRows.length === 0 ? (
+                            <div className="text-[9px] text-slate-400 bg-slate-50 p-2.5 rounded-xl border border-dashed border-slate-200 text-center font-bold">
+                                Opsional: Klik "+ Tambah" jika truk ini memakai bahan kemasan plastik/karung.
+                            </div>
+                        ) : (
+                            <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
+                                {packingRows.map((pRow) => {
+                                    const selectedMat = packingMaterials.find(m => m.id === pRow.materialId);
+                                    return (
+                                        <div key={pRow.id} className="flex items-center gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                                            <select
+                                                value={pRow.materialId}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setPackingRows(prev => prev.map(r => r.id === pRow.id ? { ...r, materialId: val } : r));
+                                                }}
+                                                className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800"
+                                            >
+                                                <option value="">-- Pilih Kemasan --</option>
+                                                {packingMaterials.map(m => (
+                                                    <option key={m.id} value={m.id}>
+                                                        {m.name} ({m.current_stock} {m.unit})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="w-16 relative">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={pRow.qty}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setPackingRows(prev => prev.map(r => r.id === pRow.id ? { ...r, qty: val } : r));
+                                                    }}
+                                                    placeholder="0"
+                                                    className="w-full bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-right font-black text-[10px] text-slate-900"
+                                                />
+                                            </div>
+                                            <span className="text-[8px] font-bold text-slate-400 w-6">{selectedMat?.unit || ''}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPackingRows(prev => prev.filter(r => r.id !== pRow.id))}
+                                                className="text-slate-300 hover:text-rose-500 font-bold px-1"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {totalPackingCost > 0 && (
+                            <div className="flex justify-between items-center text-[10px] bg-cyan-50 p-2 rounded-xl border border-cyan-100 font-bold text-cyan-950">
+                                <span>Biaya Kemasan Truk:</span>
+                                <span className="font-black text-cyan-700">Rp {totalPackingCost.toLocaleString('id-ID')}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

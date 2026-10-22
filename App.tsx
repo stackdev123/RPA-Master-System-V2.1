@@ -42,6 +42,9 @@ import SalesOrderDetailModal from './components/SalesOrderDetailModal';
 import CreateDOFromSOModal from './components/CreateDOFromSOModal';
 import DOReturnModal from './components/DOReturnModal';
 import DOReturnsListView from './components/DOReturnsListView';
+import RawMaterialPurchaseForm from './components/RawMaterialPurchaseForm';
+import DailyStockValuationForm from './components/DailyStockValuationForm';
+import PackingStockOpnameView from './components/PackingStockOpnameView';
 import { TrashIcon } from './components/icons';
 import { db, supabase } from './supabaseClient';
 import { getOfflineQueue } from './offlineSync';
@@ -56,7 +59,8 @@ import {
     type StockItem, type Coop, type Customer, type MasterItem, type Invoice, type DeliveryOrder,
     type SupabaseInvoice, type ExpenseRecord, type SalaryRecord, type LedgerEntry,
     type StockLog, type SupabaseProductionLog, type TradingPurchaseRecord, type StockDisposalRecord, type AllocationItem, type ActivityLog,
-    type SalesOrder, type DOReturnRecord, type AppModuleId, type LBArrivalRecord
+    type SalesOrder, type DOReturnRecord, type AppModuleId, type LBArrivalRecord,
+    type RawMaterialPurchase, type DailyStockItemPrice
 } from './types';
 
 const App: React.FC = () => {
@@ -227,6 +231,12 @@ const App: React.FC = () => {
         if (canViewSubModule(currentUserPerms.permissions, 'logistics', 'stock', currentUserPerms.isSuperAdmin)) {
             tabs.push({ id: 'stock', label: 'INVENTARIS' });
         }
+        if (canViewSubModule(currentUserPerms.permissions, 'logistics', 'raw_materials', currentUserPerms.isSuperAdmin)) {
+            tabs.push({ id: 'raw_materials', label: 'PEMBELIAN RAW MATERIAL' });
+        }
+        if (canViewSubModule(currentUserPerms.permissions, 'logistics', 'packing_stock', currentUserPerms.isSuperAdmin)) {
+            tabs.push({ id: 'packing_stock', label: 'STOK & OPNAME PACKING' });
+        }
         if (canViewSubModule(currentUserPerms.permissions, 'logistics', 'delivery_orders', currentUserPerms.isSuperAdmin)) {
             tabs.push({ id: 'delivery_orders', label: 'SURAT JALAN' });
         }
@@ -246,6 +256,7 @@ const App: React.FC = () => {
             { id: 'invoices_list', label: 'INVOICES' },
             { id: 'expenses', label: 'BIAYA OPERASIONAL' },
             { id: 'salaries', label: 'PENGGAJIAN KARYAWAN' },
+            { id: 'daily_stock_valuation', label: 'DAILY STOCK VALUATION' },
             { id: 'stock_value', label: 'SALDO & VALUASI STOK' },
             { id: 'profit_loss', label: 'LABA RUGI (PNL)' },
             { id: 'belanja_lb', label: 'BELANJA LB' },
@@ -383,6 +394,7 @@ const App: React.FC = () => {
     // Sales Order & DO Return states
     const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
     const [doReturns, setDoReturns] = useState<DOReturnRecord[]>([]);
+    const [rawMaterialPurchases, setRawMaterialPurchases] = useState<RawMaterialPurchase[]>([]);
     const [isSalesOrderOpen, setIsSalesOrderOpen] = useState(false);
     const [salesOrderToEdit, setSalesOrderToEdit] = useState<SalesOrder | null>(null);
     const [selectedSO, setSelectedSO] = useState<SalesOrder | null>(null);
@@ -2020,6 +2032,76 @@ const App: React.FC = () => {
         }
     };
 
+    const fetchRawMaterialPurchases = useCallback(async () => {
+        try {
+            const res = await fetch('/api/raw-material-purchases');
+            if (res.ok) setRawMaterialPurchases(await res.json());
+        } catch (e) {
+            console.warn('Failed to fetch raw material purchases:', e);
+        }
+    }, []);
+
+    const handleAddRawMaterialPurchase = async (p: Omit<RawMaterialPurchase, 'id' | 'timestamp'>) => {
+        setIsLoading(true);
+        try {
+            const newRecord: RawMaterialPurchase = {
+                ...p,
+                id: `rmp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                timestamp: new Date().toISOString()
+            };
+            const res = await fetch('/api/raw-material-purchases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newRecord)
+            });
+            if (!res.ok) throw new Error('Gagal menyimpan ke server');
+
+            if (p.auto_add_stock) {
+                try {
+                    await db.addStockLog({
+                        item_name: p.item_name,
+                        tipe_perubahan: 'TAMBAH',
+                        jumlah: p.qty_kg,
+                        keterangan: `Pembelian Raw Material dari ${p.supplier} (Faktur: ${p.nomor_faktur || '-'})`
+                    }, currentUserName);
+                } catch (stockErr) {
+                    console.warn('Auto stock adjustment warning:', stockErr);
+                }
+            }
+            await fetchRawMaterialPurchases();
+            await fetchInitialData(true);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteRawMaterialPurchase = async (id: string) => {
+        setIsLoading(true);
+        try {
+            const res = await fetch(`/api/raw-material-purchases/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                await fetchRawMaterialPurchases();
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            void fetchRawMaterialPurchases();
+        }
+    }, [isAuthenticated, fetchRawMaterialPurchases]);
+
+    const handleSaveDailyStockValuation = async (date: string, totalValuation: number, _itemPrices: DailyStockItemPrice[]) => {
+        try {
+            await db.upsertEarlyStock(date, totalValuation, currentUserName);
+            await fetchInitialData(true);
+        } catch (err: any) {
+            console.error('Failed to sync daily valuation to earlyStock:', err);
+        }
+    };
+
     const soDefaultPrices = useMemo(() => {
         const targetCustomer = orderToInvoice?.customer || invoiceToEdit?.customer;
         const targetDOId = orderToInvoice?.id || invoiceToEdit?.deliveryOrderId;
@@ -2300,7 +2382,7 @@ const App: React.FC = () => {
                                     })()}
                                 </h1>
                                 <p className="text-xs md:text-sm text-slate-500 leading-relaxed">
-                                    Selamat datang di Sistem Operasional <span className="font-semibold text-slate-700">PT Mitra Karya Foodindo (RPA)</span>. Silakan pilih modul pada menu navigasi di atas untuk mulai bekerja.
+                                    Selamat datang di Sistem Operasional <span className="font-semibold text-slate-700">PT Mitra Karya Chicken (RPA)</span>. Silakan pilih modul pada menu navigasi di atas untuk mulai bekerja.
                                 </p>
                             </div>
                         </div>
@@ -2375,7 +2457,7 @@ const App: React.FC = () => {
                                     <div className="space-y-6">
                                         {canViewSubModule(currentUserPerms.permissions, 'production', 'input', currentUserPerms.isSuperAdmin) && (
                                             <ProductionForm 
-                                                onSubmit={async (n: number, c: string, d: string, l: string, noDo: string, e: number, k: number, m: number, mk: number, it: Record<string, number>, pr: number, auto: boolean, date: string, arrivalId?: string) => {
+                                                onSubmit={async (n: number, c: string, d: string, l: string, noDo: string, e: number, k: number, m: number, mk: number, it: Record<string, number>, pr: number, auto: boolean, date: string, arrivalId?: string, packingUsage?: any[]) => {
                                                     setIsLoading(true);
                                                     try {
                                                         const driverInfo = noDo ? `${d} (DO: ${noDo})` : d;
@@ -2400,6 +2482,24 @@ const App: React.FC = () => {
                                                             auto, 
                                                             currentUserName
                                                         );
+
+                                                        if (packingUsage && packingUsage.length > 0) {
+                                                            try {
+                                                                await fetch('/api/packing-usages', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({
+                                                                        date,
+                                                                        truck_number: n,
+                                                                        no_do: noDo,
+                                                                        items: packingUsage,
+                                                                        operator: currentUserName
+                                                                    })
+                                                                });
+                                                            } catch (pErr) {
+                                                                console.warn('Failed to save packing usage:', pErr);
+                                                            }
+                                                        }
 
                                                         if (arrivalId) {
                                                             const target = lbArrivals.find(a => a.id === arrivalId);
@@ -2572,6 +2672,20 @@ const App: React.FC = () => {
                                             canViewHistory={canViewSubModule(currentUserPerms.permissions, 'logistics', 'stock_history', currentUserPerms.isSuperAdmin)}
                                         />
                                     )
+                                ) : logisticsTab === 'raw_materials' ? (
+                                    <RawMaterialPurchaseForm
+                                        purchases={rawMaterialPurchases}
+                                        masterItems={masterItems}
+                                        onAddPurchase={handleAddRawMaterialPurchase}
+                                        onDeletePurchase={handleDeleteRawMaterialPurchase}
+                                        currentUserName={currentUserName}
+                                        canEdit={canEditSubModule(currentUserPerms.permissions, 'logistics', 'raw_materials', currentUserPerms.isSuperAdmin)}
+                                    />
+                                ) : logisticsTab === 'packing_stock' ? (
+                                    <PackingStockOpnameView
+                                        currentUserName={currentUserName}
+                                        canEdit={canEditSubModule(currentUserPerms.permissions, 'logistics', 'packing_stock', currentUserPerms.isSuperAdmin)}
+                                    />
                                 ) : logisticsTab === 'delivery_orders' ? (
                                     <DeliveryOrderList 
                                         deliveryOrders={deliveryOrders} 
@@ -2651,6 +2765,17 @@ const App: React.FC = () => {
                                 {financeTab === 'expenses' && <ExpenseView expenses={expenses} onAddExpense={() => setIsAddingExpense(true)} onDeleteExpense={async (id: string) => { if (window.confirm('Hapus record ini?')) { await db.deleteExpense(id, currentUserName); await fetchInitialData(true); } }} />}
                                 {financeTab === 'salaries' && <SalaryView salaries={salaries} onAddSalary={() => setIsAddingSalary(true)} onDeleteSalary={async (id: string) => { if (window.confirm('Hapus data gaji ini?')) { await db.deleteSalary(id, currentUserName); await fetchInitialData(true); } }} onImportSalaries={(data: any) => { setSalaryImportData(data); setIsAddingSalary(true); }} />}
                                 {financeTab === 'stock_value' && <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200"><StockValueReport stockLogs={stockLogs} invoices={invoices} masterItems={masterItems} stock={stock} productionHistory={productionLogs} deliveryOrders={deliveryOrders} onInputEarlyStock={async (date: string, value: number) => { try { await db.upsertEarlyStock(date, value, currentUserName); await fetchInitialData(true); alert('Saldo Awal berhasil disimpan.'); } catch (e: any) { alert(e.message); } }} /></div>}
+                                {financeTab === 'daily_stock_valuation' && (
+                                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200">
+                                        <DailyStockValuationForm
+                                            stock={stock}
+                                            invoices={invoices}
+                                            masterItems={masterItems}
+                                            currentUser={currentUserName}
+                                            onSaveValuation={handleSaveDailyStockValuation}
+                                        />
+                                    </div>
+                                )}
                                 {financeTab === 'profit_loss' && <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200"><ProfitLossView invoices={invoices} productionHistory={[...productionLogs, ...pendingLogs]} expenses={expenses} salaries={salaries} stockLogs={stockLogs} tradingPurchases={tradingPurchases} stockDisposals={stockDisposals} stock={stock} ledgerEntries={ledgerEntries} earlyStock={earlyStock} masterItems={masterItems} /></div>}
                                 {financeTab === 'belanja_lb' && <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200"><BelanjaLBReport productionHistory={[...productionLogs, ...pendingLogs]} /></div>}
                                 {financeTab === 'hpp' && <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200"><HPPView productionHistory={productionLogs} expenses={expenses} invoices={invoices} masterItems={masterItems} /></div>}

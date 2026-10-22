@@ -233,7 +233,7 @@ const ManualInvoiceForm: React.FC<ManualInvoiceFormProps> = ({ customers, master
                             <div className="flex items-center gap-5" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                                 <img src="/logo trial.png" alt="Logo" style={{ height: '70px', width: 'auto' }} />
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <h2 style={{ fontSize: '22px', fontWeight: '900', margin: 0, textTransform: 'uppercase', lineHeight: '1.2' }}>PT Mitra Karya Foodindo</h2>
+                                    <h2 style={{ fontSize: '22px', fontWeight: '900', margin: 0, textTransform: 'uppercase', lineHeight: '1.2' }}>PT Mitra Karya Chicken</h2>
                                     <p style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase', marginTop: '6px', lineHeight: '1.4' }}>
                                         Kp. Pangkalan No. 436, Desa Pangkalan, Kec. Bojong<br/>
                                         Kab. Purwakarta, Jawa Barat 41164

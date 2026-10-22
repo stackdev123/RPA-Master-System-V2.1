@@ -72,6 +72,8 @@ export const APP_MODULES: AppModuleConfig[] = [
     description: 'Surat Jalan (DO), Stok fisik, Opname, Retur & Tolakan DO',
     subModules: [
       { id: 'logistics.stock', key: 'stock', label: 'Inventaris & Monitoring Stok Gudang', category: 'Stok & Gudang Fisik', description: 'Monitoring stok fisik karkas/ayam real-time di cold storage / gudang' },
+      { id: 'logistics.raw_materials', key: 'raw_materials', label: 'Pembelian Raw Material', category: 'Stok & Gudang Fisik', description: 'Input pembelian bahan baku langsung karkas/boneless dengan qty, harga per kg, dan supplier' },
+      { id: 'logistics.packing_stock', key: 'packing_stock', label: 'Stok & Opname Packing Material', category: 'Stok & Gudang Fisik', description: 'Manajemen persediaan bahan kemasan plastik, karung, dan stock opname harian' },
       { id: 'logistics.stock_allocation', key: 'stock_allocation', label: 'Alokasi Stok / Pengeluaran SJ', category: 'Stok & Gudang Fisik', description: 'Otorisasi pengeluaran dan alokasi stok karkas untuk dimuat ke armada truk' },
       { id: 'logistics.stock_opname', key: 'stock_opname', label: 'Stock Opname Fisik', category: 'Stok & Gudang Fisik', description: 'Input opname fisik, pencatatan selisih susut/lebih, dan penyesuaian timbangan' },
       { id: 'logistics.trading', key: 'trading', label: 'Pembelian Trading Karkas', category: 'Stok & Gudang Fisik', description: 'Pencatatan pembelian karkas/ayam dari supplier luar dan histori transaksi' },
@@ -96,6 +98,7 @@ export const APP_MODULES: AppModuleConfig[] = [
       { id: 'finance.chicken_prices', key: 'chicken_prices', label: 'Harga Beli Ayam (Kandang)', category: 'Harga & Biaya Pokok', description: 'Setting harga beli ayam hidup per kg untuk kalkulasi HPP' },
       { id: 'finance.expenses', key: 'expenses', label: 'Biaya Operasional', category: 'Beban Operasional', description: 'Pencatatan pengeluaran operasional dan bukti upload transaksi' },
       { id: 'finance.salaries', key: 'salaries', label: 'Penggajian Karyawan & Kasbon', category: 'Beban Operasional', description: 'Perhitungan gaji harian, kasbon karyawan, dan total penggajian' },
+      { id: 'finance.daily_stock_valuation', key: 'daily_stock_valuation', label: 'Daily Stock Valuation (Harga Harian)', category: 'Valuasi & Keuangan', description: 'Penetapan harga pasar satuan per kg harian per item dan nilai aset persediaan' },
       { id: 'finance.stock_value', key: 'stock_value', label: 'Saldo Awal & Valuasi Stok', category: 'Valuasi & Keuangan', description: 'Setting saldo awal persediaan dan nilai valuasi persediaan cold storage' },
       { id: 'finance.profit_loss', key: 'profit_loss', label: 'Laporan Laba Rugi (PnL)', category: 'Valuasi & Keuangan', description: 'Kalkulasi laba kotor, laba bersih, beban operasional, dan margin usaha' },
       { id: 'finance.belanja_lb', key: 'belanja_lb', label: 'Laporan Belanja Live Bird', category: 'Valuasi & Keuangan', description: 'Rekapitulasi realisasi belanja ayam hidup dari peternak / kandang harian' },

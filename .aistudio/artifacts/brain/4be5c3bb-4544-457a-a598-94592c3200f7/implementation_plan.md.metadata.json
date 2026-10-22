@@ -1,6 +1,6 @@
 {
-  "summary":  "Revised implementation plan incorporating supplier from master data, manual driver & license plate, pcs/ekor & kg quantity, and production input from master data with per-truck yield ratio breakdown.",
-  "updatedAt":  "2026-10-21T09:12:13.628032102Z",
+  "summary":  "Rencana implementasi terperinci untuk 4 fitur operasional utama PT Mitra Karya Chicken:\n1. Pembelian Raw Material Langsung (Boneless & Karkas) di Modul Logistik.\n2. Penentuan Harga Harian (Daily Stock Valuation by Item Price/kg) untuk valuasi stok gudang.\n3. Manajemen Stok & Opname Harian Packing Material (Plastik, Karung, dll).\n4. Pencatatan Pemakaian Packing Material pada Form Produksi yang langsung memotong stok dan masuk ke kalkulasi HPP batch/harian.",
+  "updatedAt":  "2026-10-22T07:37:53.089196705Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

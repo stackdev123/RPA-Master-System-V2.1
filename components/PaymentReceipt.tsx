@@ -66,7 +66,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({ payment, customer, onCl
                 <div id="receipt-print-area" className="bg-white p-6 font-sans text-black flex flex-col" style={{ width: '210mm', minHeight: '148mm', margin: 'auto' }}>
                     <header className="text-center mb-6 border-b pb-4">
                         <h1 className="text-2xl font-bold text-gray-800">TANDA TERIMA PEMBAYARAN</h1>
-                        <p className="text-sm text-gray-600">PT Mitra Karya Foodindo</p>
+                        <p className="text-sm text-gray-600">PT Mitra Karya Chicken</p>
                     </header>
                     
                     <div className="flex justify-between items-start text-sm mb-6">

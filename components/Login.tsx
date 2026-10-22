@@ -71,11 +71,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <div className="flex flex-col items-center text-center mb-7">
                         <img
                             src="/logo trial.png"
-                            alt="Logo PT Mitra Karya Foodindo"
+                            alt="Logo PT Mitra Karya Chicken"
                             className="h-16 w-auto mb-3 object-contain"
                         />
                         <p className="text-sm font-semibold text-slate-900 tracking-tight">
-                            PT Mitra Karya Foodindo
+                            PT Mitra Karya Chicken
                         </p>
                         <p className="text-xs text-slate-500 mt-0.5">
                             RPA Master System
@@ -228,7 +228,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
                 {/* Copyright */}
                 <p className="mt-6 text-center text-xs text-slate-400">
-                    &copy; 2026 PT Mitra Karya Foodindo. All rights reserved.
+                    &copy; 2026 PT Mitra Karya Chicken. All rights reserved.
                 </p>
             </div>
         </div>
